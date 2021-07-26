@@ -2,6 +2,8 @@
 
 namespace Cnpscy\Socialite;
 
+use Cnpscy\Socialite\Two\BaiduProvider;
+use Cnpscy\Socialite\Two\QQProvider;
 use Cnpscy\Socialite\Two\WeiboProvider;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Manager;
@@ -40,6 +42,48 @@ class SocialiteManager extends Manager implements Contracts\Factory
 
         return $this->buildProvider(
             GithubProvider::class, $config
+        );
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Cnpscy\Socialite\Two\AbstractProvider
+     */
+    protected function createWeiboDriver()
+    {
+        $config = $this->config->get('services.weibo');
+
+        return $this->buildProvider(
+            WeiboProvider::class, $config
+        );
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Cnpscy\Socialite\Two\AbstractProvider
+     */
+    protected function createBaiduDriver()
+    {
+        $config = $this->config->get('services.baidu');
+
+        return $this->buildProvider(
+            BaiduProvider::class, $config
+        );
+    }
+
+    /**
+     * Create an instance of the specified driver.
+     *
+     * @return \Cnpscy\Socialite\Two\AbstractProvider
+     */
+    protected function createQQDriver()
+    {
+        $config = $this->config->get('services.qq');
+
+        return $this->buildProvider(
+            QQProvider::class, $config
         );
     }
 
