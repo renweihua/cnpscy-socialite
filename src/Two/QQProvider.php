@@ -26,12 +26,6 @@ class QQProvider extends AbstractProvider implements ProviderInterface
      */
     protected $openId;
 
-    /**
-     * get token(openid) with unionid.
-     *
-     * @var bool
-     */
-    protected $withUnionId = false;
 
     /**
      * User unionid.
@@ -63,7 +57,7 @@ class QQProvider extends AbstractProvider implements ProviderInterface
      */
     protected function getAuthUrl($state)
     {
-        return $this->buildAuthUrlFromBase($this->baseUrl.'/oauth2.0/authorize', $state);
+        return $this->buildAuthUrlFromBase('https://graph.qq.com/oauth2.0/authorize', $state);
     }
 
     /**
@@ -73,7 +67,7 @@ class QQProvider extends AbstractProvider implements ProviderInterface
      */
     protected function getTokenUrl()
     {
-        return $this->baseUrl.'/oauth2.0/token';
+        return 'https://graph.qq.com/oauth2.0/token';
     }
 
     /**
@@ -85,7 +79,7 @@ class QQProvider extends AbstractProvider implements ProviderInterface
      */
     protected function getTokenFields($code)
     {
-        return parent::getTokenFields($code) + ['grant_type' => 'authorization_code'];
+        return parent::getTokenFields($code) + ['grant_type' => 'authorization_code', 'fmt' => 'json'];
     }
 
     /**
@@ -119,13 +113,20 @@ class QQProvider extends AbstractProvider implements ProviderInterface
     }
 
     /**
-     * @return self
+     * Get the access token response for the given code.
+     *
+     * @param  string  $code
+     * @return array
      */
-    public function withUnionId()
+    public function getAccessTokenResponse($code)
     {
-        $this->withUnionId = true;
+        $token_url = $this->getTokenUrl() . '?';
+        
+        foreach ($this->getTokenFields($code) as $k => $v) $token_url .= "$k=" . urlencode($v) . "&";
 
-        return $this;
+        $response = $this->getHttpClient()->get($token_url);
+
+        return json_decode($response->getBody(), true);
     }
 
     /**
@@ -137,22 +138,22 @@ class QQProvider extends AbstractProvider implements ProviderInterface
      */
     protected function getUserByToken($token)
     {
-        $url = $this->baseUrl.'/oauth2.0/me?access_token='.$token;
-        $this->withUnionId && $url .= '&unionid=1';
+        $url = $this->baseUrl.'/oauth2.0/me?access_token='.$token . '&fmt=json';
 
         $response = $this->getHttpClient()->get($url);
 
         $me = json_decode($this->removeCallback($response->getBody()->getContents()), true);
+
         $this->openId = $me['openid'];
         $this->unionId = isset($me['unionid']) ? $me['unionid'] : '';
 
         $queries = [
-            'access_token' => $token->getToken(),
+            'access_token' => $token,
             'openid' => $this->openId,
             'oauth_consumer_key' => $this->clientId,
         ];
 
-        $response = $this->getHttpClient()->get($this->baseUrl.'/user/get_user_info?'.http_build_query($queries));
+        $response = $this->getHttpClient()->get('https://graph.qq.com/user/get_user_info?'.http_build_query($queries));
 
         return json_decode($this->removeCallback($response->getBody()->getContents()), true);
     }
@@ -169,10 +170,9 @@ class QQProvider extends AbstractProvider implements ProviderInterface
         return new User([
             'id' => $this->openId,
             'unionid' => $this->unionId,
-            'nickname' => $this->arrayItem($user, 'nickname'),
-            'name' => $this->arrayItem($user, 'nickname'),
-            'email' => $this->arrayItem($user, 'email'),
-            'avatar' => $this->arrayItem($user, 'figureurl_qq_2'),
+            'nickname' => $user['nickname'],
+            'gender' => $user['gender'],
+            'avatar' => $user['figureurl_qq_2'],
         ]);
     }
 
