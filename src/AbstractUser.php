@@ -14,6 +14,8 @@ abstract class AbstractUser implements ArrayAccess, User
      */
     public $id;
 
+    public $unionid;
+
     /**
      * The user's nickname / username.
      *
@@ -57,6 +59,16 @@ abstract class AbstractUser implements ArrayAccess, User
     public function getId()
     {
         return $this->id;
+    }
+
+    /**
+     * Get the unique identifier for the user.
+     *
+     * @return string
+     */
+    public function getUnionId()
+    {
+        return $this->unionid ?? '';
     }
 
     /**
